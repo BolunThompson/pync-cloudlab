@@ -1,0 +1,17 @@
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.15.20
+  hooks:
+  - id: ruff-format
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.10.0.1
+  hooks:
+  - id: shellcheck
+    # -x + source-path so `. common.sh` resolves even when common.sh isn't in
+    # the staged file set pre-commit passes (otherwise SC1091 fails the commit).
+    args: [-x, --source-path=SCRIPTDIR:.]
+- repo: https://github.com/scop/pre-commit-shfmt
+  rev: v3.10.0-2
+  hooks:
+  - id: shfmt-docker
+    args: [-w, -i, '2']
