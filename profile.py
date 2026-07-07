@@ -78,12 +78,12 @@ def attach_dataset(node, name, ifname, rwclone):
 
 
 for i in range(params.nodeCount):
-    node = request.RawPC(f"node{i}")
+    node = request.RawPC("node%d" % i)
     node.hardware_type = params.hardware
     node.disk_image = OS_IMAGE
-    bs = node.Blockstore(f"bs{i}", "/mydata")
-    bs.size = f"{params.localBSSize}GB"
-    attach_dataset(node, f"dsnode{i}", f"ifds{i}", rwclone=not params.datasetRW)
+    bs = node.Blockstore("bs%d" % i, "/mydata")
+    bs.size = "%dGB" % params.localBSSize
+    attach_dataset(node, "dsnode%d" % i, "ifds%d" % i, rwclone=not params.datasetRW)
     node.addService(
         pg.Execute(
             shell="bash",
