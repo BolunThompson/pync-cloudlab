@@ -23,7 +23,7 @@ setup_apt() {
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -y
   apt-get install -y nfs-common fish tmux git-lfs \
-    curl xz-utils rsync
+    curl xz-utils rsync ripgrep fd-find
 }
 
 # install docker with its data-root on the persistent blockstore
