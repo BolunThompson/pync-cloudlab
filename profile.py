@@ -14,6 +14,11 @@ from geni.rspec import pg
 OS_IMAGE = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU24-64-STD"
 # The long-term dataset holding the benchmark inputs; mounted at /nfs on every node.
 DATASET_URN = "urn:publicid:IDN+utah.cloudlab.us:ucla-progsoftsys-pg0+ltdataset+Pync"
+# c6525-25g and the dataset both live at Utah. Pin every node (including the
+# blockstore host) there: API instantiation has no cluster selector, and an
+# unpinned dataset node gets mapped to emulab.net, which fails with
+# "Blockstore links are not allowed to span clusters".
+CLUSTER_URN = "urn:publicid:IDN+utah.cloudlab.us+authority+cm"
 
 pc = portal.Context()
 
@@ -66,6 +71,7 @@ def attach_dataset(node, name, ifname, rwclone):
     """Attach the dataset to `node` at /nfs over its own link (a private rwclone
     for runs, or the real read-write volume in populate mode)."""
     ds = request.RemoteBlockstore(name, "/nfs")
+    ds.component_manager_id = CLUSTER_URN
     ds.dataset = DATASET_URN
     if rwclone:
         ds.rwclone = True
@@ -79,6 +85,7 @@ def attach_dataset(node, name, ifname, rwclone):
 
 for i in range(params.nodeCount):
     node = request.RawPC("node%d" % i)
+    node.component_manager_id = CLUSTER_URN
     node.hardware_type = params.hardware
     node.disk_image = OS_IMAGE
     bs = node.Blockstore("bs%d" % i, "/mydata")
