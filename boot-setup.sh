@@ -23,6 +23,20 @@ setup_mount() {
   chmod 1777 "$MOUNT"
 }
 
+# BOL-208 guard: images and the BuildKit cache must sit on the blockstore. If
+# they land on the 63GB root disk, a few hours of image builds fill it and every
+# later build fails with "no space left on device".
+docker_up() { docker info >/dev/null 2>&1; }
+check_docker_storage() {
+  wait_for 24 docker_up
+  case "$(docker info --format '{{.DockerRootDir}}')" in
+  "$MOUNT"/*) ;;
+  *) die "docker data-root is not under $MOUNT" ;;
+  esac
+  grep -qx "root = \"$MOUNT/containerd\"" /etc/containerd/config.toml ||
+    die "containerd root is not under $MOUNT"
+}
+
 # add every user to the docker group (users can appear after first boot)
 setup_docker_group() {
   local u
@@ -84,6 +98,7 @@ main() {
   wait_for 120 test -e "$DONE_DIR/initial"
 
   setup_mount
+  check_docker_storage
   setup_docker_group
   install_uv
   perf_settings
