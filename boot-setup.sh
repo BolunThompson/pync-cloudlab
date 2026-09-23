@@ -23,6 +23,17 @@ setup_mount() {
   chmod 1777 "$MOUNT"
 }
 
+# TODO-BOLUN: Repair Docker GC settings on nodes provisioned before this profile revision.
+reconcile_docker_config() {
+  local status=0
+  write_docker_config "$MOUNT" /etc/docker/daemon.json || status=$?
+  case "$status" in
+  0) systemctl try-restart docker ;;
+  1) ;;
+  *) die "could not validate Docker configuration" ;;
+  esac
+}
+
 # BOL-208 guard: images and the BuildKit cache must sit on the blockstore. If
 # they land on the 63GB root disk, a few hours of image builds fill it and every
 # later build fails with "no space left on device".
@@ -98,6 +109,7 @@ main() {
   wait_for 120 test -e "$DONE_DIR/initial"
 
   setup_mount
+  reconcile_docker_config
   check_docker_storage
   setup_docker_group
   install_uv

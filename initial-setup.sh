@@ -37,12 +37,7 @@ install_docker() {
     curl -fsSL https://get.docker.com | sh
   fi
   mkdir -p "$MOUNT/docker" "$MOUNT/containerd" /etc/docker /etc/containerd
-  cat >/etc/docker/daemon.json <<EOF
-{
-  "data-root": "$MOUNT/docker",
-  "builder": { "gc": { "enabled": true, "policy": [ { "keepStorage": "50GB" } ] } }
-}
-EOF
+  write_docker_config "$MOUNT" /etc/docker/daemon.json || true
   cat >/etc/containerd/config.toml <<EOF
 disabled_plugins = ["cri"]
 root = "$MOUNT/containerd"
@@ -59,16 +54,21 @@ EOF
   systemctl start containerd docker
   wait_for 12 test -d "$MOUNT/containerd/io.containerd.content.v1.content"
   rm -rf /var/lib/containerd # relocated; anything left here only wastes root space
+  case "$(docker info --format '{{.DockerRootDir}}')" in
+  "$MOUNT"/*) rm -rf /var/lib/docker ;;
+  esac
 }
 
 # belt-and-braces for BOL-208: trim build cache hourly, so a wedged gc cannot
 # grow the store without bound over a multi-day eval
 install_prune_timer() {
+  install -d -m 0700 /mydata/home-state/root/.docker
   cat >/etc/systemd/system/docker-prune.service <<'EOF'
 [Unit]
 Description=Trim the docker build cache
 [Service]
 Type=oneshot
+Environment=DOCKER_CONFIG=/mydata/home-state/root/.docker
 ExecStart=/usr/bin/docker builder prune -f --filter until=6h
 EOF
   cat >/etc/systemd/system/docker-prune.timer <<'EOF'
