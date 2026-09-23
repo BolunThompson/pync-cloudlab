@@ -39,6 +39,7 @@ reconcile_docker_config() {
 # later build fails with "no space left on device".
 docker_up() { docker info >/dev/null 2>&1; }
 check_docker_storage() {
+  local u
   wait_for 24 docker_up
   case "$(docker info --format '{{.DockerRootDir}}')" in
   "$MOUNT"/*) ;;
@@ -46,6 +47,10 @@ check_docker_storage() {
   esac
   grep -qx "root = \"$MOUNT/containerd\"" /etc/containerd/config.toml ||
     die "containerd root is not under $MOUNT"
+  for u in /users/*; do
+    [ -d "$u" ] || continue
+    [ -L "$u/.docker" ] || echo "NOTE: $u/.docker is not relocated to $MOUNT"
+  done
 }
 
 # add every user to the docker group (users can appear after first boot)
@@ -53,6 +58,31 @@ setup_docker_group() {
   local u
   for u in /users/*; do
     usermod -aG docker "$(basename "$u")"
+  done
+}
+
+# TODO-BOLUN: Give each node local Docker and cache state even when /users is shared.
+relocate_home_state() {
+  local u user uid gid rel target source
+  install -d -m 0755 "$MOUNT/home-state"
+  for u in /users/*; do
+    [ -d "$u" ] || continue
+    user=$(basename "$u")
+    uid=$(stat -c %u "$u")
+    gid=$(stat -c %g "$u")
+    install -d -m 0700 -o "$uid" -g "$gid" "$MOUNT/home-state/$user"
+    for rel in .docker .cache; do
+      source="$u/$rel"
+      target="$MOUNT/home-state/$user/$rel"
+      install -d -m 0700 -o "$uid" -g "$gid" "$target"
+      if [ "$(readlink "$source" 2>/dev/null || true)" = "$target" ]; then continue; fi
+      if [ -e "$source" ]; then
+        cp -a "$source/." "$target/" || echo "NOTE: could not migrate $source; relinking anyway"
+      fi
+      install -d -m 0700 -o "$uid" -g "$gid" "$target"
+      rm -rf "$source"
+      ln -sfn "$target" "$source"
+    done
   done
 }
 
@@ -104,6 +134,30 @@ setup_nfs() {
   done
 }
 
+# TODO-BOLUN: Record storage growth outside setup.log without stopping an evaluation.
+install_disk_report() {
+  install -m 0755 "$REPO/disk-report.sh" /usr/local/sbin/disk-report || return
+  cat >/etc/systemd/system/disk-report.service <<'EOF' || return
+[Unit]
+Description=Record CloudLab node disk usage
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/disk-report
+EOF
+  cat >/etc/systemd/system/disk-report.timer <<'EOF' || return
+[Unit]
+Description=Record CloudLab node disk usage every ten minutes
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=10min
+[Install]
+WantedBy=timers.target
+EOF
+  systemctl daemon-reload || return
+  systemctl enable --now disk-report.timer || return
+  systemctl start disk-report.service || return
+}
+
 main() {
   # wait for cloudlab setup to finish
   wait_for 120 test -e "$DONE_DIR/initial"
@@ -112,9 +166,11 @@ main() {
   reconcile_docker_config
   check_docker_storage
   setup_docker_group
+  relocate_home_state
   install_uv
   perf_settings
   setup_nfs
+  install_disk_report || echo "NOTE: disk reporting unavailable"
 
   echo SETUP-OK
 }
