@@ -25,7 +25,11 @@ write_docker_config() {
   "data-root": "$mount/docker",
   "builder": { "gc": { "enabled": true, "policy": [
     { "keepDuration": "48h", "reservedSpace": "4GB",
-      "filter": ["type=source.local", "type=exec.cachemount", "type=source.git.checkout"] },
+      "filter": ["type=source.local"] },
+    { "keepDuration": "48h", "reservedSpace": "4GB",
+      "filter": ["type=exec.cachemount"] },
+    { "keepDuration": "48h", "reservedSpace": "4GB",
+      "filter": ["type=source.git.checkout"] },
     { "keepDuration": "168h", "reservedSpace": "10GB", "maxUsedSpace": "60GB" },
     { "reservedSpace": "10GB", "maxUsedSpace": "60GB" },
     { "reservedSpace": "10GB", "maxUsedSpace": "80GB", "minFreeSpace": "100GB", "all": true }
