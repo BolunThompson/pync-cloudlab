@@ -33,6 +33,18 @@ pc.defineParameter(
     "hardware", "Hardware type", portal.ParameterType.STRING, "c6525-25g"
 )
 pc.defineParameter(
+    "aggregate",
+    "CloudLab aggregate",
+    portal.ParameterType.AGGREGATE,
+    CLUSTER_URN,
+)
+pc.defineParameter(
+    "attachDataset",
+    "Attach the Utah benchmark dataset",
+    portal.ParameterType.BOOLEAN,
+    True,
+)
+pc.defineParameter(
     "datasetRW",
     "Attach the dataset read-write to a single node (populate mode)",
     portal.ParameterType.BOOLEAN,
@@ -61,6 +73,20 @@ if params.datasetRW and params.nodeCount != 1:
     pc.reportError(
         portal.ParameterError("datasetRW requires nodeCount == 1", ["nodeCount"])
     )
+if params.attachDataset and params.aggregate != CLUSTER_URN:
+    pc.reportError(
+        portal.ParameterError(
+            "the benchmark dataset is available only at the Utah aggregate",
+            ["aggregate", "attachDataset"],
+        )
+    )
+if params.datasetRW and not params.attachDataset:
+    pc.reportError(
+        portal.ParameterError(
+            "datasetRW requires attachDataset",
+            ["datasetRW", "attachDataset"],
+        )
+    )
 pc.verifyParameters()
 
 request = pc.makeRequestRSpec()
@@ -85,12 +111,15 @@ def attach_dataset(node, name, ifname, rwclone):
 
 for i in range(params.nodeCount):
     node = request.RawPC("node%d" % i)
-    node.component_manager_id = CLUSTER_URN
+    node.component_manager_id = params.aggregate
     node.hardware_type = params.hardware
     node.disk_image = OS_IMAGE
     bs = node.Blockstore("bs%d" % i, "/mydata")
     bs.size = "%dGB" % params.localBSSize
-    attach_dataset(node, "dsnode%d" % i, "ifds%d" % i, rwclone=not params.datasetRW)
+    if params.attachDataset:
+        attach_dataset(
+            node, "dsnode%d" % i, "ifds%d" % i, rwclone=not params.datasetRW
+        )
     node.addService(
         pg.Execute(
             shell="bash",
