@@ -125,8 +125,10 @@ perf_settings() {
 # own /nfs and the laptop orchestrates over ssh, so there is nothing to share.
 setup_nfs() {
   local d
-  # wait for CloudLab to auto-mount the remote blockstore
-  wait_for 30 mountpoint -q "$NFSDIR"
+  if ! mountpoint -q "$NFSDIR"; then
+    mkdir -p "$MOUNT/nfs" "$NFSDIR"
+    mount --bind "$MOUNT/nfs" "$NFSDIR"
+  fi
   chmod 1777 "$NFSDIR"
   for d in pync datasets results; do
     mkdir -p "$NFSDIR/$d"
