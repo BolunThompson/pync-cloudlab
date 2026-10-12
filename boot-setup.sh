@@ -97,9 +97,9 @@ install_uv() {
   done
 }
 
-# reproducible-performance settings: performance governor, turbo boost off
+# reproducible-performance settings: performance governor
 perf_settings() {
-  local found g b
+  local found g
 
   # performance governor on all CPUs to prevent reducing the clock speed
   found=0
@@ -108,7 +108,7 @@ perf_settings() {
     found=1
   done
   if [ "$found" != 1 ]; then echo "NOTE: no cpufreq governor interface on this node"; fi
-  # Turbo boost is kept because most cloudlab nodes do not allow disabling it 
+  # Turbo boost is kept because most cloudlab nodes do not allow disabling it
 }
 
 # /nfs is this node's own CloudLab-mounted dataset (a private rwclone for runs, or

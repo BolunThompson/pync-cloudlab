@@ -1,17 +1,42 @@
 repos:
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.15.20
-  hooks:
-  - id: ruff-format
-- repo: https://github.com/shellcheck-py/shellcheck-py
-  rev: v0.10.0.1
-  hooks:
-  - id: shellcheck
-    # -x + source-path so `. common.sh` resolves even when common.sh isn't in
-    # the staged file set pre-commit passes (otherwise SC1091 fails the commit).
-    args: [-x, --source-path=SCRIPTDIR:.]
-- repo: https://github.com/scop/pre-commit-shfmt
-  rev: v3.10.0-2
-  hooks:
-  - id: shfmt-docker
-    args: [-w, -i, '2']
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty
+        entry: uv run --locked ty check
+        language: system
+        pass_filenames: false
+        always_run: true
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [-x, --source-path=SCRIPTDIR:.]
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.14.1-1
+    hooks:
+      - id: shfmt
+        args: [-w, -i, '2']
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.51.1
+    hooks:
+      - id: typos
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint

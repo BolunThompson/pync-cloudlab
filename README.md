@@ -47,3 +47,17 @@ On a node, inspect `systemctl status docker containerd disk-report.timer`,
 `tail /local/logs/disk-usage.log` when investigating storage growth. The
 filesystem backing `/users` must be checked before attributing a home-directory
 `ENOSPC` to the root filesystem.
+
+## Development
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
+
+```sh
+uv sync --locked
+uv run pre-commit install
+uv run pre-commit run --all-files
+```
+
+The hooks check whitespace, YAML/TOML, Python linting and formatting with Ruff,
+types with ty, shell scripts with ShellCheck and shfmt, spelling with typos, and
+GitHub Actions with actionlint.
