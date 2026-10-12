@@ -108,16 +108,7 @@ perf_settings() {
     found=1
   done
   if [ "$found" != 1 ]; then echo "NOTE: no cpufreq governor interface on this node"; fi
-
-  # disable turbo boost on all CPUs to prevent increasing the clock speed
-  found=0
-  for b in /sys/devices/system/cpu/cpufreq/boost \
-    /sys/devices/system/cpu/cpufreq/policy*/boost; do
-    if [ ! -f "$b" ]; then continue; fi
-    if ! echo 0 >"$b"; then die "cannot disable CPU boost ($b)"; fi
-    found=1
-  done
-  if [ "$found" != 1 ]; then echo "NOTE: no CPU boost control on this node"; fi
+  # Turbo boost is kept because most cloudlab nodes do not allow disabling it 
 }
 
 # /nfs is this node's own CloudLab-mounted dataset (a private rwclone for runs, or
