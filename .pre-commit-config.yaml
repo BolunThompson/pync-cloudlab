@@ -8,14 +8,23 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.17.0
-    hooks:
-      - id: ruff-check
-        args: [--fix]
-      - id: ruff-format
   - repo: local
     hooks:
+      - id: autopep8
+        name: autopep8
+        entry: uv run --locked autopep8 --in-place
+        language: system
+        types: [python]
+      - id: flake8
+        name: flake8
+        entry: uv run --locked flake8
+        language: system
+        types: [python]
+      - id: python-compatibility
+        name: CloudLab Python 2.7 compatibility
+        entry: uv run --locked vermin -t=2.7- --violations --no-tips
+        language: system
+        files: ^profile\.py$
       - id: ty
         name: ty
         entry: uv run --locked ty check

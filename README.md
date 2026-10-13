@@ -58,6 +58,12 @@ uv run pre-commit install
 uv run pre-commit run --all-files
 ```
 
-The hooks check whitespace, YAML/TOML, Python linting and formatting with Ruff,
-types with ty, shell scripts with ShellCheck and shfmt, spelling with typos, and
-GitHub Actions with actionlint.
+CloudLab's [default profile jail](https://gitlab.flux.utah.edu/emulab/emulab-devel/-/blob/master/apt/README-genilib-jail)
+uses Python 2.7, so `profile.py` must remain
+compatible with it. The Python 3.11 requirement above is for local development
+tools, not the portal interpreter. Ruff cannot target Python 2.7; Flake8 and
+autopep8 lint and format the profile without upgrading its syntax, and Vermin
+checks Python 2.7 compatibility.
+
+The hooks also check whitespace, YAML/TOML, types with ty, shell scripts with
+ShellCheck and shfmt, spelling with typos, and GitHub Actions with actionlint.

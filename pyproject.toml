@@ -9,13 +9,19 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  "autopep8==2.3.2",
+  "flake8==7.3.0",
+  "flake8-bugbear==26.9.30",
+  "flake8-isort==7.0.0",
   "pre-commit==4.5.1",
-  "ruff==0.17.0",
   "ty==0.0.86",
+  "vermin==1.6.0",
 ]
 
-[tool.ruff]
-target-version = "py311"
+[tool.autopep8]
+max_line_length = 88
+ignore = ["E501"]
 
-[tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+[tool.isort]
+py_version = 27
+line_length = 88
