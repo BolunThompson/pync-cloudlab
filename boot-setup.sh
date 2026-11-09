@@ -55,10 +55,33 @@ check_docker_storage() {
 
 # add every user to the docker group (users can appear after first boot)
 setup_docker_group() {
-  local u
-  for u in /users/*; do
-    usermod -aG docker "$(basename "$u")"
-  done
+  cat >/usr/local/sbin/docker-group <<'EOF'
+#!/bin/sh
+for u in /users/*; do
+  u=$(basename "$u")
+  id -nG "$u" 2>/dev/null | tr ' ' '\n' | grep -qx docker || usermod -aG docker "$u"
+done
+EOF
+  chmod 0755 /usr/local/sbin/docker-group
+  /usr/local/sbin/docker-group
+  cat >/etc/systemd/system/docker-group.service <<'EOF'
+[Unit]
+Description=Restore docker group membership after testbed account updates
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/docker-group
+EOF
+  cat >/etc/systemd/system/docker-group.timer <<'EOF'
+[Unit]
+Description=Restore docker group membership every fifteen minutes
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=5min
+[Install]
+WantedBy=timers.target
+EOF
+  systemctl daemon-reload
+  systemctl enable --now docker-group.timer
 }
 
 # TODO-BOLUN: Give each node local Docker and cache state even when /users is shared.
